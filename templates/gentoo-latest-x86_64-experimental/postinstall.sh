@@ -44,7 +44,7 @@ cd /mnt/gentoo
 
 #Download a stage3 archive
 while true; do
-        wget http://distfiles.gentoo.org/releases/amd64/current-stage3/stage3-amd64-20111208.tar.bz2 && > gotstage3
+        wget http://distfiles.gentoo.org/releases/amd64/current-stage3/stage3-amd64-*.tar.bz2 && > gotstage3
         if [ -f "gotstage3" ]
         then
 		break
@@ -78,28 +78,13 @@ cp -L /etc/resolv.conf /mnt/gentoo/etc/
 echo "env-update && source /etc/profile" | chroot /mnt/gentoo /bin/bash -
 
 # Get the kernel sources
-echo "emerge =sys-kernel/gentoo-sources-2.6.39-r3" | chroot /mnt/gentoo /bin/bash -
+echo "emerge gentoo-sources" | chroot /mnt/gentoo /bin/bash -
 
 # We will use genkernel to automate the kernel compilation
 # http://www.gentoo.org/doc/en/genkernel.xml
 echo "emerge grub" | chroot /mnt/gentoo /bin/bash -
 echo "emerge genkernel" | chroot /mnt/gentoo /bin/bash -
-echo 'MAKEOPTS="-j17"' >> /mnt/gentoo/etc/make.conf
-
-cat <<EOF | chroot /mnt/gentoo /bin/bash -
-cat <<GRUBCONF > /boot/grub/grub.conf
-default 0
-timeout 1
-
-title=Gentoo Linux (2.6.39-gentoo-r3)
-root (hd0,0)
-kernel /boot/kernel-genkernel-x86_64-2.6.39-gentoo-r3 root=/dev/ram0 real_root=/dev/sda3
-initrd /boot/initramfs-genkernel-x86_64-2.6.39-gentoo-r3
-GRUBCONF
-EOF
-
-echo "genkernel --bootloader=grub --no-splash --install all" | chroot /mnt/gentoo /bin/bash -
-
+echo "genkernel --bootloader=grub --real_root=/dev/sda3 --no-splash --install all" | chroot /mnt/gentoo /bin/bash -
 cat <<EOF | chroot /mnt/gentoo /bin/bash -
 /sbin/grub --batch --device-map=/dev/null <<GRUBEOF
 device (hd0) /dev/sda
@@ -132,9 +117,6 @@ rc-update add sshd default
 EOF
 
 #Root password
-
-# make.conf customization for more CPU cores
-echo 'MAKEOPTS="-j17"' >> /mnt/gentoo/etc/make.conf
 
 # Cron & Syslog
 echo "emerge syslog-ng vixie-cron" | chroot /mnt/gentoo sh -
@@ -188,16 +170,15 @@ echo "echo '. /usr/local/rvm/scripts/rvm' >> /etc/bash/bash.rc" | chroot /mnt/ge
 VBOX_VERSION=$(cat /root/.vbox_version)
 
 #Kernel headers
-echo "emerge =sys-kernel/linux-headers-2.6.39" | chroot /mnt/gentoo /bin/bash -
+echo "emerge linux-headers" | chroot /mnt/gentoo /bin/bash -
 
 #Installing the virtualbox guest additions
 cat <<EOF | chroot /mnt/gentoo /bin/bash -
-mkdir /etc/portage
-cat <<KEYWORDSEOF > /etc/portage/package.keywords
-=app-emulation/virtualbox-guest-additions-4.1.6-r1
-KEYWORDSEOF
-emerge =app-emulation/virtualbox-guest-additions-4.1.6-r1
-rc-update add virtualbox-guest-additions default
+mkdir /mnt/vbox
+mount -o loop VBoxGuestAdditions_$VBOX_VERSION.iso /mnt/vbox
+sh /mnt/vbox/VBoxLinuxAdditions.run
+umount /mnt/vbox
+rm VBoxGuestAdditions_$VBOX_VERSION.iso
 EOF
 
 rm -rf /mnt/gentoo/usr/portage/distfiles

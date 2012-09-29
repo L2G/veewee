@@ -58,7 +58,7 @@ tar xjpf stage3*
 #Download Portage snapshot
 cd /mnt/gentoo/usr
 while true; do
-	wget http://distfiles.gentoo.org/snapshots/portage-latest.tar.bz2 && > gotportage
+        wget http://distfiles.gentoo.org/releases/snapshots/current/portage-latest.tar.bz2 && > gotportage
         if [ -f "gotportage" ]
         then
 		break
@@ -85,6 +85,14 @@ echo "emerge gentoo-sources" | chroot /mnt/gentoo /bin/bash -
 echo "emerge grub" | chroot /mnt/gentoo /bin/bash -
 echo "emerge genkernel" | chroot /mnt/gentoo /bin/bash -
 echo "genkernel --bootloader=grub --real_root=/dev/sda3 --no-splash --install all" | chroot /mnt/gentoo /bin/bash -
+cat <<EOF | chroot /mnt/gentoo /bin/bash -
+/sbin/grub --batch --device-map=/dev/null <<GRUBEOF
+device (hd0) /dev/sda
+root (hd0,0)
+setup (hd0)
+quit
+GRUBEOF
+EOF
 
 cat <<EOF | chroot /mnt/gentoo /bin/bash -
 cat <<FSTAB > /etc/fstab
@@ -102,6 +110,7 @@ cd /etc/conf.d
 echo 'config_eth0=( "dhcp" )' >> net
 #echo 'dhcpd_eth0=( "-t 10" )' >> net
 #echo 'dhcp_eth0=( "release nodns nontp nois" )' >> net
+ln -s net.lo /etc/init.d/net.eth0
 rc-update add net.eth0 default
 #Module?
 rc-update add sshd default
@@ -161,18 +170,20 @@ echo "echo '. /usr/local/rvm/scripts/rvm' >> /etc/bash/bash.rc" | chroot /mnt/ge
 VBOX_VERSION=$(cat /root/.vbox_version)
 
 #Kernel headers
-chroot /mnt/gentoo emerge linux-headers
+echo "emerge linux-headers" | chroot /mnt/gentoo /bin/bash -
 
 #Installing the virtualbox guest additions
 cat <<EOF | chroot /mnt/gentoo /bin/bash -
-cd /tmp
 mkdir /mnt/vbox
-wget http://download.virtualbox.org/virtualbox/$VBOX_VERSION/VBoxGuestAdditions_$VBOX_VERSION.iso
 mount -o loop VBoxGuestAdditions_$VBOX_VERSION.iso /mnt/vbox
 sh /mnt/vbox/VBoxLinuxAdditions.run
-#umount /mnt/vbox
-#rm VBoxGuestAdditions_$VBOX_VERSION.iso
+umount /mnt/vbox
+rm VBoxGuestAdditions_$VBOX_VERSION.iso
 EOF
+
+rm -rf /mnt/gentoo/usr/portage/distfiles
+mkdir /mnt/gentoo/usr/portage/distfiles
+echo "chown portage:portage /usr/portage/distfiles" | chroot /mnt/gentoo /bin/bash -
 
 echo "sed -i 's:^DAEMONS\(.*\))$:DAEMONS\1 rc.vboxadd):' /etc/rc.conf" | chroot /mnt/gentoo sh -
 

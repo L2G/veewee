@@ -1,10 +1,10 @@
 require 'net/http'
 
 # Name spacing variables as they are executed inside veewee code
-template_uri = 'http://distfiles.gentoo.org/releases/x86/autobuilds/latest-install-amd64-minimal.txt'
+template_uri = 'http://distfiles.gentoo.org/releases/amd64/autobuilds/latest-install-amd64-minimal.txt'
 template_build = Net::HTTP.get_response( URI.parse( template_uri ) ).body
 template_build = /^(([^#].*)\/(.*))/.match( template_build )
-template_uri = "http://distfiles.gentoo.org/releases/x86/autobuilds/#{template_build[1]}.DIGESTS"
+template_uri = "http://distfiles.gentoo.org/releases/amd64/autobuilds/#{template_build[1]}.DIGESTS"
 template_digest = Net::HTTP.get_response( URI.parse( template_uri ) ).body
 template_digest = Regexp.new( '^([a-z0-9]{32})\s+ ' + Regexp.escape( template_build[3] ) + '$').match( template_digest )[1]
 
@@ -14,7 +14,7 @@ Veewee::Definition.declare( {
   :disk_size => '10140', :disk_format => 'VDI',:hostiocache => 'off',
   :os_type_id => 'Gentoo_64',
   :iso_file => template_build[3],
-  :iso_src => "http://distfiles.gentoo.org/releases/x86/autobuilds/#{template_build[1]}",
+  :iso_src => "http://distfiles.gentoo.org/releases/amd64/autobuilds/#{template_build[1]}",
   :iso_md5 => template_digest,
   :iso_download_timeout => "1000",
   :boot_wait => "10",:boot_cmd_sequence => [

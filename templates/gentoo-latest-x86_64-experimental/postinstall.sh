@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Utility function for sending commands through chroot
+function chroot_pipe {
+    cat | chroot /mnt/gentoo /bin/bash -
+}
+
 date > /etc/vagrant_box_build_time
 
 #Based on http://www.gentoo.org/doc/en/gentoo-x86-quickinstall.xml
@@ -75,17 +80,18 @@ cd /
 mount -t proc proc /mnt/gentoo/proc
 mount --rbind /dev /mnt/gentoo/dev
 cp -L /etc/resolv.conf /mnt/gentoo/etc/
-echo "env-update && source /etc/profile" | chroot /mnt/gentoo /bin/bash -
+chroot_pipe <<< "env-update && source /etc/profile"
 
 # Get the kernel sources
-echo "emerge gentoo-sources" | chroot /mnt/gentoo /bin/bash -
+chroot_pipe <<< "emerge gentoo-sources"
 
 # We will use genkernel to automate the kernel compilation
 # http://www.gentoo.org/doc/en/genkernel.xml
-echo "emerge grub" | chroot /mnt/gentoo /bin/bash -
-echo "emerge genkernel" | chroot /mnt/gentoo /bin/bash -
-echo "genkernel --bootloader=grub --real_root=/dev/sda3 --no-splash --install all" | chroot /mnt/gentoo /bin/bash -
-cat <<EOF | chroot /mnt/gentoo /bin/bash -
+chroot_pipe <<< "emerge grub"
+chroot_pipe <<< "emerge genkernel"
+chroot_pipe <<< "genkernel --bootloader=grub --real_root=/dev/sda3 --no-splash --install all"
+
+chroot_pipe <<EOF
 /sbin/grub --batch --device-map=/dev/null <<GRUBEOF
 device (hd0) /dev/sda
 root (hd0,0)
@@ -94,7 +100,7 @@ quit
 GRUBEOF
 EOF
 
-cat <<EOF | chroot /mnt/gentoo /bin/bash -
+chroot_pipe <<EOF
 cat <<FSTAB > /etc/fstab
 /dev/sda1   /boot     ext2    noauto,noatime     1 2
 /dev/sda3   /         ext3    noatime            0 1
@@ -105,7 +111,7 @@ EOF
 
 #We need some things to do here
 #Network
-cat <<EOF | chroot /mnt/gentoo /bin/bash -
+chroot_pipe <<EOF
 cd /etc/conf.d
 echo 'config_eth0=( "dhcp" )' >> net
 #echo 'dhcpd_eth0=( "-t 10" )' >> net
@@ -119,61 +125,61 @@ EOF
 #Root password
 
 # Cron & Syslog
-echo "emerge syslog-ng vixie-cron" | chroot /mnt/gentoo sh -
-echo "rc-update add syslog-ng default" | chroot /mnt/gentoo sh -
-echo "rc-update add vixie-cron default" | chroot /mnt/gentoo sh -
+chroot_pipe <<< "emerge syslog-ng vixie-cron"
+chroot_pipe <<< "rc-update add syslog-ng default"
+chroot_pipe <<< "rc-update add vixie-cron default"
 
 #Get an editor going
-echo "emerge vim" | chroot /mnt/gentoo sh -
+chroot_pipe <<< "emerge vim"
 
 #Allow external ssh
-echo "echo 'sshd:ALL' > /etc/hosts.allow" | chroot /mnt/gentoo sh -
-echo "echo 'ALL:ALL' > /etc/hosts.deny" | chroot /mnt/gentoo sh -
+chroot_pipe <<< "echo 'sshd:ALL' > /etc/hosts.allow"
+chroot_pipe <<< "echo 'ALL:ALL' > /etc/hosts.deny"
 
 #create vagrant user  / password vagrant
-chroot /mnt/gentoo useradd -m -r vagrant -p '$1$MPmczGP9$1SeNO4bw5YgiEJuo/ZkWq1'
+chroot_pipe <<< "useradd -m -r vagrant -p '$1$MPmczGP9$1SeNO4bw5YgiEJuo/ZkWq1'"
 
 #Configure Sudo
-chroot /mnt/gentoo emerge sudo
-echo "echo 'vagrant ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers" | chroot /mnt/gentoo sh -
+chroot_pipe <<< "emerge sudo"
+chroot_pipe <<< "echo 'vagrant ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers"
 
 #Installing vagrant keys
-chroot /mnt/gentoo emerge wget 
+chroot_pipe <<< "emerge wget "
 
 echo "creating vagrant ssh keys"
-chroot /mnt/gentoo mkdir /home/vagrant/.ssh
-chroot /mnt/gentoo chmod 700 /home/vagrant/.ssh
-chroot /mnt/gentoo cd /home/vagrant/.ssh
-chroot /mnt/gentoo wget --no-check-certificate 'https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub' -O /home/vagrant/.ssh/authorized_keys
-chroot /mnt/gentoo chmod 600 /home/vagrant/.ssh/authorized_keys
-chroot /mnt/gentoo chown -R vagrant /home/vagrant/.ssh
+chroot_pipe <<< "mkdir /home/vagrant/.ssh"
+chroot_pipe <<< "chmod 700 /home/vagrant/.ssh"
+chroot_pipe <<< "cd /home/vagrant/.ssh"
+chroot_pipe <<< "wget --no-check-certificate 'https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub' -O /home/vagrant/.ssh/authorized_keys"
+chroot_pipe <<< "chmod 600 /home/vagrant/.ssh/authorized_keys"
+chroot_pipe <<< "chown -R vagrant /home/vagrant/.ssh"
 
 #This could be done in postinstall
 #reboot
 
 #get some ruby running
-chroot /mnt/gentoo emerge git curl gcc automake  m4
-chroot /mnt/gentoo emerge libiconv readline zlib openssl curl git libyaml sqlite libxslt
-echo "bash < <(curl -s https://rvm.beginrescueend.com/install/rvm)"| chroot /mnt/gentoo /bin/bash -
-echo "/usr/local/rvm/bin/rvm install ruby-1.8.7 "| chroot /mnt/gentoo sh -
-echo "/usr/local/rvm/bin/rvm use ruby-1.8.7 --default "| chroot /mnt/gentoo sh -
+chroot_pipe <<< "emerge git curl gcc automake  m4"
+chroot_pipe <<< "emerge libiconv readline zlib openssl curl git libyaml sqlite libxslt"
+chroot_pipe <<< "curl -s https://rvm.beginrescueend.com/install/rvm"
+chroot_pipe <<< "/usr/local/rvm/bin/rvm install ruby-1.8.7 "
+chroot_pipe <<< "/usr/local/rvm/bin/rvm use ruby-1.8.7 --default "
 
 #Installing chef & Puppet
-echo ". /usr/local/rvm/scripts/rvm ; gem install chef --no-ri --no-rdoc"| chroot /mnt/gentoo sh -
-echo ". /usr/local/rvm/scripts/rvm ; gem install puppet --no-ri --no-rdoc"| chroot /mnt/gentoo sh -
+chroot_pipe <<< ". /usr/local/rvm/scripts/rvm ; gem install chef --no-ri --no-rdoc"
+chroot_pipe <<< ". /usr/local/rvm/scripts/rvm ; gem install puppet --no-ri --no-rdoc"
 
 
 echo "adding rvm to global bash rc"
-echo "echo '. /usr/local/rvm/scripts/rvm' >> /etc/bash/bash.rc" | chroot /mnt/gentoo sh -
+chroot_pipe <<< "echo '. /usr/local/rvm/scripts/rvm' >> /etc/bash/bash.rc"
 
 /bin/cp -f /root/.vbox_version /mnt/gentoo/home/vagrant/.vbox_version
 VBOX_VERSION=$(cat /root/.vbox_version)
 
 #Kernel headers
-echo "emerge linux-headers" | chroot /mnt/gentoo /bin/bash -
+chroot_pipe <<< "emerge linux-headers"
 
 #Installing the virtualbox guest additions
-cat <<EOF | chroot /mnt/gentoo /bin/bash -
+chroot_pipe <<EOF
 mkdir /mnt/vbox
 mount -o loop VBoxGuestAdditions_$VBOX_VERSION.iso /mnt/vbox
 sh /mnt/vbox/VBoxLinuxAdditions.run
@@ -183,9 +189,9 @@ EOF
 
 rm -rf /mnt/gentoo/usr/portage/distfiles
 mkdir /mnt/gentoo/usr/portage/distfiles
-echo "chown portage:portage /usr/portage/distfiles" | chroot /mnt/gentoo /bin/bash -
+chroot_pipe <<< "chown portage:portage /usr/portage/distfiles"
 
-echo "sed -i 's:^DAEMONS\(.*\))$:DAEMONS\1 rc.vboxadd):' /etc/rc.conf" | chroot /mnt/gentoo sh -
+chroot_pipe <<< "sed -i 's:^DAEMONS\(.*\))$:DAEMONS\1 rc.vboxadd):' /etc/rc.conf"
 
 exit
 cd /

@@ -174,13 +174,12 @@ VBOX_VERSION=$(cat /root/.vbox_version)
 chroot_pipe <<< "emerge linux-headers"
 
 #Installing the virtualbox guest additions
-chroot_pipe <<EOF
-mkdir /mnt/vbox
-mount -o loop VBoxGuestAdditions_$VBOX_VERSION.iso /mnt/vbox
-sh /mnt/vbox/VBoxLinuxAdditions.run
-umount /mnt/vbox
+mkdir /mnt/gentoo/mnt/vbox
+mount -o loop VBoxGuestAdditions_$VBOX_VERSION.iso /mnt/gentoo/mnt/vbox
+chroot_pipe <<< "sh /mnt/vbox/VBoxLinuxAdditions.run"
+umount /mnt/gentoo/mnt/vbox
+rmdir /mnt/gentoo/mnt/vbox
 rm VBoxGuestAdditions_$VBOX_VERSION.iso
-EOF
 
 rm -rf /mnt/gentoo/usr/portage/distfiles
 mkdir /mnt/gentoo/usr/portage/distfiles

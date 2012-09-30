@@ -45,22 +45,17 @@ mkdir /mnt/gentoo/boot
 mount /dev/sda1 /mnt/gentoo/boot
 cd /mnt/gentoo
 
-#Note: we retry as sometimes mirrors fail to have the files
-
-#Download a stage3 archive
-while true; do
-        wget http://distfiles.gentoo.org/releases/amd64/current-stage3/stage3-amd64-*.tar.bz2 && > gotstage3
-        if [ -f "gotstage3" ]
-        then
-		break
-	else
-		echo "trying in 2seconds"
-		sleep 2
-        fi
-done
+#Download stage3 archive
+#This uses FTP so we can use a wildcard in it
+wget ftp://distfiles.gentoo.org/pub/gentoo/releases/amd64/current-stage3/stage3-amd64-*.tar.bz2 || {
+	echo "Problem downloading current stage3 tarball; please check the URL"
+	exit 1
+}
 tar xjpf stage3*
 
 #Download Portage snapshot
+#Note: This loops indefinitely as distfiles.gentoo.org will redirect to
+#different mirrors, some of which may not have the tarball
 cd /mnt/gentoo/usr
 while true; do
         wget http://distfiles.gentoo.org/releases/snapshots/current/portage-latest.tar.bz2 && > gotportage

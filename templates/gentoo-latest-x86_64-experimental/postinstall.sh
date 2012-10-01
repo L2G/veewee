@@ -45,30 +45,37 @@ mkdir /mnt/gentoo/boot
 mount /dev/sda1 /mnt/gentoo/boot
 cd /mnt/gentoo
 
-#Download stage3 archive
-#This uses FTP so we can use a wildcard in it
-wget ftp://distfiles.gentoo.org/pub/gentoo/releases/amd64/current-stage3/stage3-amd64-*.tar.bz2 || {
-	echo "Problem downloading current stage3 tarball; please check the URL"
-	exit 1
-}
-tar xjpf stage3*
+# Choose list of Gentoo HTTP mirrors. This sets GENTOO_MIRRORS to a list of up
+# to 3 URLs for mirrors, all separated by spaces and having a trailing /.
+mirrorselect -H -s 3 -D -o >gentoo_mirrors
+source gentoo_mirrors && rm gentoo_mirrors
 
-#Download Portage snapshot
-#Note: This loops indefinitely as distfiles.gentoo.org will redirect to
-#different mirrors, some of which may not have the tarball
-cd /mnt/gentoo/usr
-while true; do
-        wget http://distfiles.gentoo.org/releases/snapshots/current/portage-latest.tar.bz2 && > gotportage
-        if [ -f "gotportage" ]
-        then
-		break
-	else
-		echo "trying in 2seconds"
-		sleep 2
-	fi
+#Download stage3 archive
+#(the [@] tells bash to break up the words in the variable)
+for mirror in ${GENTOO_MIRRORS[@]}; do
+    wget -r -l 1 -nd -A ${STAGE3_PATTERN:="stage3-amd64-*.tar.bz2"} \
+         ${mirror}releases/amd64/current-stage3/
+    if [ -e ${STATE3_PATTERN} ]; then break; fi
 done
 
-tar xjf portage-lat*
+if [ ! -e ${STAGE3_PATTERN} ]; then
+	echo "Could not download current stage3 tarball; must abort"
+	exit 1
+fi
+tar xjpf ${STAGE3_PATTERN} && rm ${STAGE3_PATTERN}
+
+#Download Portage snapshot
+cd /mnt/gentoo/usr
+for mirror in ${GENTOO_MIRRORS[@]}; do
+    wget ${mirror}releases/snapshots/current/portage-latest.tar.bz2 \
+        && break
+done
+
+if [ ! -e portage-lat* ]; then
+	echo "Could not download Portage tree snapshot; must abort"
+	exit 1
+fi
+tar xjf portage-lat* && rm portage-lat*
 
 #Chroot
 cd /

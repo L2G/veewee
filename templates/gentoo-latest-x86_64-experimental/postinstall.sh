@@ -91,7 +91,7 @@ chroot_pipe <<< "emerge gentoo-sources"
 # http://www.gentoo.org/doc/en/genkernel.xml
 chroot_pipe <<< "emerge grub"
 chroot_pipe <<< "emerge genkernel"
-chroot_pipe <<< "genkernel --bootloader=grub --real_root=/dev/sda3 --no-splash --install all"
+chroot_pipe <<< "genkernel --bootloader=grub --real-root=/dev/sda3 --no-splash --install all"
 
 chroot_pipe <<EOF
 /sbin/grub --batch --device-map=/dev/null <<GRUBEOF

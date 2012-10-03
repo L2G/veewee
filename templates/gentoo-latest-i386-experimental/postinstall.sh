@@ -49,6 +49,7 @@ cd /mnt/gentoo
 # to 3 URLs for mirrors, all separated by spaces and having a trailing /.
 mirrorselect -H -s 3 -D -o >gentoo_mirrors
 source gentoo_mirrors && rm gentoo_mirrors
+echo "Chosen mirrors: ${GENTOO_MIRRORS}"
 
 #Download stage3 archive
 #(the [@] tells bash to break up the words in the variable)

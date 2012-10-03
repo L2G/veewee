@@ -93,15 +93,7 @@ chroot_pipe <<< "emerge gentoo-sources"
 chroot_pipe <<< "emerge grub"
 chroot_pipe <<< "emerge genkernel"
 chroot_pipe <<< "genkernel --bootloader=grub --real-root=/dev/sda3 --no-splash --install all"
-
-chroot_pipe <<EOF
-/sbin/grub --batch --device-map=/dev/null <<GRUBEOF
-device (hd0) /dev/sda
-root (hd0,0)
-setup (hd0)
-quit
-GRUBEOF
-EOF
+chroot_pipe <<< "grub-install /dev/sda"
 
 chroot_pipe <<EOF
 cat <<FSTAB > /etc/fstab

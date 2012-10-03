@@ -56,7 +56,7 @@ echo "Chosen mirrors: ${GENTOO_MIRRORS}"
 for mirror in ${GENTOO_MIRRORS[@]}; do
     wget -r -l 1 -nd -A ${STAGE3_PATTERN:="stage3-i686-*.tar.bz2"} \
          ${mirror}releases/x86/current-stage3/
-    if [ -e ${STATE3_PATTERN} ]; then break; fi
+    if [ -e ${STAGE3_PATTERN} ]; then break; fi
 done
 
 if [ ! -e ${STAGE3_PATTERN} ]; then

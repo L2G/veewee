@@ -132,7 +132,7 @@ chroot_pipe <<< "echo 'sshd:ALL' > /etc/hosts.allow"
 chroot_pipe <<< "echo 'ALL:ALL' > /etc/hosts.deny"
 
 #create vagrant user  / password vagrant
-chroot_pipe <<< "useradd -m -r vagrant -p '$1$MPmczGP9$1SeNO4bw5YgiEJuo/ZkWq1'"
+chroot_pipe <<< "useradd -m -r vagrant -p '\$1\$MPmczGP9\$1SeNO4bw5YgiEJuo/ZkWq1'"
 
 #Configure Sudo
 chroot_pipe <<< "emerge sudo"

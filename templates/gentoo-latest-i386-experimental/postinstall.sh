@@ -153,11 +153,13 @@ chroot_pipe <<< "chown -R vagrant /home/vagrant/.ssh"
 #reboot
 
 #get some ruby running
-chroot_pipe <<< "emerge git curl gcc automake  m4"
-chroot_pipe <<< "emerge libiconv readline zlib openssl curl git libyaml sqlite libxslt"
-chroot_pipe <<< "curl -s https://rvm.beginrescueend.com/install/rvm"
-chroot_pipe <<< "/usr/local/rvm/bin/rvm install ruby-1.8.7 "
-chroot_pipe <<< "/usr/local/rvm/bin/rvm use ruby-1.8.7 --default "
+chroot_pipe <<< "emerge dev-db/sqlite      dev-libs/libxslt dev-libs/libyaml \
+                        dev-libs/openssl   dev-vcs/git      net-misc/curl    \
+                        sys-devel/automake sys-devel/gcc    sys-devel/m4     \
+                        sys-libs/readline  sys-libs/zlib    virtual/libiconv"
+chroot_pipe <<< "curl -L https://get.rvm.io | bash -s stable"
+chroot_pipe <<< "/usr/local/rvm/bin/rvm install ruby-1.8.7"
+chroot_pipe <<< "/usr/local/rvm/bin/rvm use ruby-1.8.7 --default"
 
 #Installing chef & Puppet
 chroot_pipe <<< ". /usr/local/rvm/scripts/rvm ; gem install chef --no-ri --no-rdoc"

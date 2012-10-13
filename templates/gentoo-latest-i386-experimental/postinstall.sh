@@ -1,5 +1,7 @@
 #!/bin/bash
 
+KERNEL_EBUILD_VER="3.1"
+
 # Utility function for sending commands through chroot
 function chroot_pipe {
     cat | chroot /mnt/gentoo /bin/bash -
@@ -86,7 +88,7 @@ cp -L /etc/resolv.conf /mnt/gentoo/etc/
 chroot_pipe <<< "env-update && source /etc/profile"
 
 # Get the kernel sources
-chroot_pipe <<< "emerge gentoo-sources"
+chroot_pipe <<< "emerge =sys-kernel/gentoo-sources-${KERNEL_EBUILD_VER}"
 
 # We will use genkernel to automate the kernel compilation
 # http://www.gentoo.org/doc/en/genkernel.xml
@@ -173,15 +175,15 @@ chroot_pipe <<< "echo '. /usr/local/rvm/scripts/rvm' >> /etc/bash/bash.rc"
 VBOX_VERSION=$(cat /root/.vbox_version)
 
 #Kernel headers
-chroot_pipe <<< "emerge linux-headers"
+chroot_pipe <<< "emerge =sys-kernel/linux-headers-${KERNEL_EBUILD_VER}"
 
 #Installing the virtualbox guest additions
-mkdir /mnt/gentoo/mnt/vbox
-mount -o loop VBoxGuestAdditions_$VBOX_VERSION.iso /mnt/gentoo/mnt/vbox
-chroot_pipe <<< "sh /mnt/vbox/VBoxLinuxAdditions.run"
+mkdir -p /mnt/gentoo/mnt/vbox
+mount -o loop /root/VBoxGuestAdditions_$VBOX_VERSION.iso /mnt/gentoo/mnt/vbox
+chroot_pipe <<< "/mnt/vbox/VBoxLinuxAdditions.run"
 umount /mnt/gentoo/mnt/vbox
 rmdir /mnt/gentoo/mnt/vbox
-rm VBoxGuestAdditions_$VBOX_VERSION.iso
+rm /root/VBoxGuestAdditions_$VBOX_VERSION.iso
 
 rm -rf /mnt/gentoo/usr/portage/distfiles
 mkdir /mnt/gentoo/usr/portage/distfiles
